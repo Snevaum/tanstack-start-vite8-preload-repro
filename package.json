@@ -1,0 +1,21 @@
+{
+  "name": "tanstack-start-vite8-preload-repro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "node scripts/check-preloads.mjs",
+    "fix:apply": "patch -p1 -N -d node_modules/@tanstack/start-plugin-core < fix/transitive-preloads.patch",
+    "fix:revert": "patch -p1 -R -d node_modules/@tanstack/start-plugin-core < fix/transitive-preloads.patch"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "1.170.39",
+    "@tanstack/react-start": "1.168.58",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.1.1",
+    "vite": "8.3.1"
+  }
+}

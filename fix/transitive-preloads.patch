@@ -1,0 +1,41 @@
+diff --git a/dist/esm/start-manifest-plugin/manifestBuilder.js b/dist/esm/start-manifest-plugin/manifestBuilder.js
+--- a/dist/esm/start-manifest-plugin/manifestBuilder.js
++++ b/dist/esm/start-manifest-plugin/manifestBuilder.js
+@@ -86,7 +86,7 @@ function appendAdditionalRouteEntries(route, entries) {
+ }
+ function buildStartManifest(options) {
+ 	const scannedChunks = scanClientChunks(options.clientBuild);
+-	const assetResolvers = createManifestAssetResolvers(options.basePath);
++	const assetResolvers = createManifestAssetResolvers(options.basePath, scannedChunks.chunksByFileName);
+ 	const routes = buildRouteManifestRoutes({
+ 		routeTreeRoutes: options.routeTreeRoutes,
+ 		routeChunksByFilePath: scannedChunks.routeChunksByFilePath,
+@@ -140,7 +140,7 @@ function scanClientChunks(clientBuild) {
+ 		routeChunksByFilePath
+ 	};
+ }
+-function createManifestAssetResolvers(basePath) {
++function createManifestAssetResolvers(basePath, chunksByFileName) {
+ 	const assetPathByFileName = /* @__PURE__ */ new Map();
+ 	const stylesheetLinkByFileName = /* @__PURE__ */ new Map();
+ 	const preloadsByChunk = /* @__PURE__ */ new Map();
+@@ -162,7 +162,18 @@ function createManifestAssetResolvers(basePath) {
+ 		const cachedPreloads = preloadsByChunk.get(chunk);
+ 		if (cachedPreloads) return cachedPreloads;
+ 		const preloads = [getAssetPath(chunk.fileName)];
+-		for (let i = 0; i < chunk.imports.length; i++) preloads.push(getAssetPath(chunk.imports[i]));
++		// Rolldown lists only direct imports in `chunk.imports`; walk the graph so
++		// second-level chunks are preloaded too (static imports only).
++		const seen = new Set([chunk.fileName]);
++		const queue = [...chunk.imports];
++		while (queue.length > 0) {
++			const name = queue.shift();
++			if (seen.has(name)) continue;
++			seen.add(name);
++			preloads.push(getAssetPath(name));
++			const imported = chunksByFileName?.get(name);
++			if (imported) queue.push(...imported.imports);
++		}
+ 		preloadsByChunk.set(chunk, preloads);
+ 		return preloads;
+ 	};
